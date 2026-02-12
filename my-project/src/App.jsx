@@ -9,6 +9,8 @@ import Footer from './components/Footer'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
 import Dashboard from './pages/Dashboard'
+import Chat from './pages/Chat'
+import Settings from './pages/Settings'
 
 function App() {
   return (
@@ -23,6 +25,8 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/chat" element={<Chat />} />
+        <Route path="/settings" element={<Settings />} />
       </Routes>
       <Footer />
     </Router>

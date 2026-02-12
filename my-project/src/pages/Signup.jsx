@@ -37,8 +37,9 @@ const Signup = () => {
                 throw new Error(data.detail || 'Signup failed');
             }
 
-            setSuccess('Account created successfully! Redirecting to login...');
-            setTimeout(() => navigate('/login'), 2000);
+            setSuccess('Account created successfully! Redirecting to dashboard...');
+            localStorage.setItem('userEmail', email);
+            setTimeout(() => navigate('/dashboard'), 1500);
         } catch (err) {
             setError(err.message || 'Something went wrong');
         } finally {
