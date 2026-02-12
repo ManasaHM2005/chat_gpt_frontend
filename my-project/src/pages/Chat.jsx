@@ -69,7 +69,7 @@ const Chat = () => {
                 setLoading(true);
 
                 const controller = new AbortController();
-                fetch('http://127.0.0.1:8000/ask', {
+                fetch('http://127.0.0.1:8000/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ message: userMessage, system_prompt: 'You are a helpful assistant.' }),
@@ -81,7 +81,7 @@ const Chat = () => {
                     })
                     .then(data => {
                         if (!ignore) {
-                            setMessages(prev => [...prev, { role: 'assistant', content: data.response }]);
+                            setMessages(prev => [...prev, { role: 'assistant', content: data.ai_response }]);
                         }
                     })
                     .catch(err => {
@@ -182,7 +182,7 @@ const Chat = () => {
         setLoading(true);
 
         try {
-            const response = await fetch('http://127.0.0.1:8000/ask', {
+            const response = await fetch('http://127.0.0.1:8000/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -195,7 +195,7 @@ const Chat = () => {
             if (!response.ok) throw new Error('Failed to get response');
 
             const data = await response.json();
-            setMessages(prev => [...prev, { role: 'assistant', content: data.response }]);
+            setMessages(prev => [...prev, { role: 'assistant', content: data.ai_response }]);
         } catch (err) {
             if (err.name !== 'AbortError') {
                 setMessages(prev => [
