@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
+const GUEST_TRIAL_LIMIT = 20;
+
 const Chat = () => {
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState('');
@@ -8,11 +10,21 @@ const Chat = () => {
     const [chatHistory, setChatHistory] = useState([]);
     const [activeChatId, setActiveChatId] = useState(null);
     const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [showLimitModal, setShowLimitModal] = useState(false);
     const messagesEndRef = useRef(null);
     const inputRef = useRef(null);
     const location = useLocation();
     const navigate = useNavigate();
     const hasSentInitial = useRef(false);
+
+    // Guest trial limit helpers
+    const getGuestCount = () => parseInt(localStorage.getItem('guestMessageCount') || '0', 10);
+    const incrementGuestCount = () => {
+        const count = getGuestCount() + 1;
+        localStorage.setItem('guestMessageCount', count.toString());
+        return count;
+    };
+    const isGuestLimitReached = () => !isLoggedIn && getGuestCount() >= GUEST_TRIAL_LIMIT;
 
     // Check if user is logged in
     const userEmail = localStorage.getItem('userEmail');
@@ -168,6 +180,13 @@ const Chat = () => {
         const userMessage = messageText.trim();
         if (!userMessage) return;
 
+        // Check guest trial limit
+        if (isGuestLimitReached()) {
+            setShowLimitModal(true);
+            return;
+        }
+        if (!isLoggedIn) incrementGuestCount();
+
         // Cancel any previous in-flight request
         if (abortRef.current) abortRef.current.abort();
         const controller = new AbortController();
@@ -234,6 +253,11 @@ const Chat = () => {
         return d.toLocaleDateString();
     };
 
+    const handleLogout = () => {
+        localStorage.removeItem('userEmail');
+        navigate('/login');
+    };
+
     return (
         <div className="min-h-screen bg-slate-50 flex">
             {/* Sidebar — Chat History (only for logged-in users) */}
@@ -243,16 +267,27 @@ const Chat = () => {
                 >
                     {/* Sidebar Header */}
                     <div className="p-4 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
-                        <h2 className="text-sm font-semibold text-gray-700 whitespace-nowrap truncate">{userEmail}</h2>
-                        <button
-                            onClick={startNewChat}
-                            className="h-8 w-8 bg-indigo-600 hover:bg-indigo-700 rounded-lg flex items-center justify-center transition flex-shrink-0"
-                            title="New Chat"
-                        >
-                            <svg className="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-                            </svg>
-                        </button>
+                        <h2 className="text-sm font-semibold text-gray-700 whitespace-nowrap truncate flex-1 mr-2">{userEmail}</h2>
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                            <button
+                                onClick={handleLogout}
+                                className="h-8 w-8 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg flex items-center justify-center transition"
+                                title="Log out"
+                            >
+                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                </svg>
+                            </button>
+                            <button
+                                onClick={startNewChat}
+                                className="h-8 w-8 bg-indigo-600 hover:bg-indigo-700 rounded-lg flex items-center justify-center transition text-white"
+                                title="New Chat"
+                            >
+                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                                </svg>
+                            </button>
+                        </div>
                     </div>
 
                     {/* Chat List */}
@@ -442,6 +477,52 @@ const Chat = () => {
                     </form>
                 </div>
             </div>
+
+            {/* Guest Limit Modal */}
+            {showLimitModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm transition-all">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 p-8 text-center">
+                        {/* Icon */}
+                        <div className="mx-auto h-16 w-16 bg-indigo-100 rounded-full flex items-center justify-center mb-5">
+                            <svg className="h-8 w-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            </svg>
+                        </div>
+
+                        {/* Title */}
+                        <h2 className="text-2xl font-bold text-gray-900 mb-2">Free Trial Limit Reached</h2>
+
+                        {/* Description */}
+                        <p className="text-gray-500 mb-8 leading-relaxed">
+                            You've used all <strong className="text-gray-700">20 free trials</strong>. Create an account or log in to continue chatting without limits.
+                        </p>
+
+                        {/* Buttons */}
+                        <div className="flex flex-col sm:flex-row gap-3">
+                            <button
+                                onClick={() => navigate('/login')}
+                                className="flex-1 py-3 px-6 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition shadow-md hover:shadow-lg"
+                            >
+                                Log In
+                            </button>
+                            <button
+                                onClick={() => navigate('/signup')}
+                                className="flex-1 py-3 px-6 bg-white hover:bg-gray-50 text-indigo-600 font-semibold rounded-xl border-2 border-indigo-600 transition"
+                            >
+                                Sign Up
+                            </button>
+                        </div>
+
+                        {/* Dismiss */}
+                        <button
+                            onClick={() => setShowLimitModal(false)}
+                            className="mt-4 text-sm text-gray-400 hover:text-gray-600 transition"
+                        >
+                            Maybe later
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

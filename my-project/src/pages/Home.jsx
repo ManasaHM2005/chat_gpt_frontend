@@ -1,14 +1,40 @@
 import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
+const GUEST_TRIAL_LIMIT = 20;
+
 const Home = () => {
   const [input, setInput] = useState("");
+  const [showLimitModal, setShowLimitModal] = useState(false);
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
   const textInputRef = useRef(null);
 
+  const isLoggedIn = !!localStorage.getItem("userEmail");
+
+  const getGuestCount = () => {
+    return parseInt(localStorage.getItem("guestMessageCount") || "0", 10);
+  };
+
+  const incrementGuestCount = () => {
+    const count = getGuestCount() + 1;
+    localStorage.setItem("guestMessageCount", count.toString());
+    return count;
+  };
+
+  const checkGuestLimit = () => {
+    if (isLoggedIn) return false; // logged-in users have no limit
+    if (getGuestCount() >= GUEST_TRIAL_LIMIT) {
+      setShowLimitModal(true);
+      return true;
+    }
+    return false;
+  };
+
   const handleSend = () => {
     if (input.trim()) {
+      if (checkGuestLimit()) return;
+      if (!isLoggedIn) incrementGuestCount();
       navigate("/chat", { state: { initialMessage: input.trim() } });
     }
   };
@@ -21,12 +47,15 @@ const Home = () => {
   };
 
   const handleAttach = () => {
+    if (checkGuestLimit()) return;
     fileInputRef.current?.click();
   };
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
+    if (!isLoggedIn) incrementGuestCount();
 
     const reader = new FileReader();
     reader.onload = (event) => {
@@ -64,6 +93,8 @@ const Home = () => {
     { label: "Create image", icon: "M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" },
   ];
 
+  const remainingTrials = isLoggedIn ? null : Math.max(0, GUEST_TRIAL_LIMIT - getGuestCount());
+
   return (
     <div className="min-h-screen bg-white flex flex-col items-center justify-center px-4">
       {/* Hidden file input */}
@@ -79,6 +110,15 @@ const Home = () => {
       <h1 className="text-2xl md:text-3xl font-semibold text-gray-800 mb-6">
         What can I help with?
       </h1>
+
+      {/* Guest trial counter */}
+      {!isLoggedIn && (
+        <p className="text-sm text-gray-500 mb-4">
+          {remainingTrials > 0
+            ? `You have ${remainingTrials} free trial${remainingTrials === 1 ? '' : 's'} remaining`
+            : "You've used all your free trials"}
+        </p>
+      )}
 
       {/* Input box */}
       <div className="w-full max-w-xl">
@@ -125,6 +165,52 @@ const Home = () => {
         By messaging ChatGPT, you agree to our Terms and have read our Privacy
         Policy.
       </p>
+
+      {/* Guest Limit Modal */}
+      {showLimitModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm transition-all">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 p-8 text-center transform animate-bounce-in">
+            {/* Icon */}
+            <div className="mx-auto h-16 w-16 bg-indigo-100 rounded-full flex items-center justify-center mb-5">
+              <svg className="h-8 w-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            </div>
+
+            {/* Title */}
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Free Trial Limit Reached</h2>
+
+            {/* Description */}
+            <p className="text-gray-500 mb-8 leading-relaxed">
+              You've used all <strong className="text-gray-700">20 free trials</strong>. Create an account or log in to continue chatting without limits.
+            </p>
+
+            {/* Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={() => navigate("/login")}
+                className="flex-1 py-3 px-6 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition shadow-md hover:shadow-lg"
+              >
+                Log In
+              </button>
+              <button
+                onClick={() => navigate("/signup")}
+                className="flex-1 py-3 px-6 bg-white hover:bg-gray-50 text-indigo-600 font-semibold rounded-xl border-2 border-indigo-600 transition"
+              >
+                Sign Up
+              </button>
+            </div>
+
+            {/* Dismiss */}
+            <button
+              onClick={() => setShowLimitModal(false)}
+              className="mt-4 text-sm text-gray-400 hover:text-gray-600 transition"
+            >
+              Maybe later
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
