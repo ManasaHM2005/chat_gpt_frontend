@@ -81,7 +81,7 @@ const Chat = () => {
                 setLoading(true);
 
                 const controller = new AbortController();
-                fetch('http://127.0.0.1:8000/chat', {
+                fetch(`${import.meta.env.VITE_API_BASE}/chat`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ message: userMessage, system_prompt: 'You are a helpful assistant.' }),
@@ -98,7 +98,7 @@ const Chat = () => {
                     })
                     .catch(err => {
                         if (!ignore && err.name !== 'AbortError') {
-                            setMessages(prev => [...prev, { role: 'assistant', content: '⚠️ Could not connect to the AI server. Make sure the backend is running at http://127.0.0.1:8000' }]);
+                            setMessages(prev => [...prev, { role: 'assistant', content: `⚠️ Could not connect to the AI server. Make sure the backend is running at ${import.meta.env.VITE_API_BASE}` }]);
                         }
                     })
                     .finally(() => {
@@ -201,7 +201,7 @@ const Chat = () => {
         setLoading(true);
 
         try {
-            const response = await fetch('http://127.0.0.1:8000/chat', {
+            const response = await fetch(`${import.meta.env.VITE_API_BASE}/chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -219,7 +219,7 @@ const Chat = () => {
             if (err.name !== 'AbortError') {
                 setMessages(prev => [
                     ...prev,
-                    { role: 'assistant', content: '⚠️ Could not connect to the AI server. Make sure the backend is running at http://127.0.0.1:8000' },
+                    { role: 'assistant', content: `⚠️ Could not connect to the AI server. Make sure the backend is running at ${import.meta.env.VITE_API_BASE}` },
                 ]);
             }
         } finally {
